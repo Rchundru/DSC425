@@ -1,0 +1,199 @@
+---
+title: "Chundru_HW2"
+author: "Rohit Chundru"
+date: "2/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Question 1
+```{r}
+library(forecast)
+
+oil = read.csv('C:/Users/rohit/Desktop/crudeoil_w0416.csv')
+```
+```{r}
+head(oil)
+```
+
+```{r}
+oil$date = as.Date(as.character(oil$date), format='%d-%b-%y')
+str(oil)
+```
+## 1A
+
+```{r}
+library(zoo)
+oil = oil[order(oil$date),]
+oil = zoo(oil$price, oil$date)
+plot(oil, main="The price of oil", ylab="price", xlab = "date")
+```
+
+There is no trend or seasonality among the data.
+
+
+##1B
+```{r}
+oil = read.csv('C:/Users/rohit/Desktop/crudeoil_w0416.csv')
+x=NULL
+x[1] = 0
+for(t in 2:627){
+  x[t]= (oil$price[t]-oil$price[t-1])/oil$price[t-1]
+}
+oil$date = as.Date(as.character(oil$date), format='%d-%b-%y')
+oil = oil[order(oil$date),]
+oil_rate = zoo(x, oil$date)
+plot(oil_rate, main="Change rate of spot prices", ylab="change rate", xlab="date")
+```
+
+There is no visible trend, and the data appears to look like white noise.
+
+##1C
+```{r}
+library(fBasics)
+gghistogram(oil_rate, add.normal = T)
+qqnorm(oil_rate)
+qqline(oil_rate)
+```
+
+The distribution rate does not appear to be symmetric since in the histogram plot the data appears to be skewed and is not normally distributed and the Q-Q plot shows heavy tails.
+
+##1D
+```{r}
+s3 = skewness(oil_rate)
+T = length(oil_rate)
+tst = s3/sqrt(6/T)
+pv = 2*pnorm(-abs(tst))
+pv
+```
+
+We can reject the null hypothesis because the null hypothesis is below 0.05
+
+##1E
+```{r}
+k4 = kurtosis(oil_rate)
+tst = (k4-3)/sqrt(24/T)
+pv = 2*pnorm(-abs(tst))
+pv
+```
+We can reject the null hypothesis because the null hypothesis is below 0.05
+
+##1F
+```{r}
+jarqueberaTest(oil_rate)
+```
+Since the p-value is less than 0.05, we can reject the null hypothesis.
+
+##1G
+
+```{r}
+Box.test(oil_rate, lag=5, type = "Ljung")
+Box.test(oil_rate, lag=10, type = "Ljung")
+Box.test(oil_rate, lag=15, type = "Ljung")
+```
+The Ljung Box test shows that we can reject the null hypothesis for lag 5, 10, and 15 since the p-value for all of them
+is less then 0.05.
+
+##1H
+```{r}
+ggAcf(oil_rate, lag.max=20)
+```
+
+There are 5 instances where ACF goes outide the bounds which suggests serial correlation.
+
+##1I
+```{r}
+(acf(oil_rate, lag.max=3, type = 'covariance'))
+```
+
+ACF(1) is greater than 0 so it is affected by the previous value and will follow the same trend. ACF(2) is less then 0 so it will be more distant from the previous value. ACF(3) is greater than 0 so it will follow the same trend as the previous value.
+
+#Question 2
+
+##2A
+```{r}
+groceries = read.csv('C:/Users/rohit/Desktop/groceries.csv')
+head(groceries)
+```
+```{r}
+groceries$Date = as.Date(as.character(groceries$Date), format='%d-%b-%y')
+str(groceries)
+```
+```{r}
+groceries = groceries[order(groceries$Date),]
+groceries_toothpaste = zoo(groceries$ToothPaste, groceries$Date)
+plot(groceries_toothpaste, main="The price of ToothPaste", ylab="price", xlab = "date")
+```
+
+There does not appear to be any trends or seasonality.
+
+##2B
+```{r}
+gghistogram(groceries_toothpaste, add.normal = T)
+qqnorm(groceries_toothpaste)
+qqline(groceries_toothpaste)
+```
+
+according to the histogram and the Q-Q plot, the data does appear to be close to normal distribution.
+
+##2C
+```{r}
+jarqueberaTest(groceries_toothpaste)
+```
+Since the P-Value is greater than 0.05, we cannot reject the null hypothesis.
+
+##2D
+```{r}
+ggAcf(groceries_toothpaste, lag.max=20)
+```
+
+Since most of the instances stay within the bounds, I would classify this as white noise.
+
+##2E
+Only the first lag is significant, and since it is greater than 0 that means that it is influenced by the previous point.
+
+##2F
+```{r}
+Box.test(groceries_toothpaste, lag=5, type = "Ljung")
+Box.test(groceries_toothpaste, lag=10, type = "Ljung")
+Box.test(groceries_toothpaste, lag=15, type = "Ljung")
+```
+other than lag 5, all other lags have a p-value greater than 0.05, meaning we can reject the null hypothesis.
+
+##2G
+```{r}
+mean_model = meanf(groceries_toothpaste, h=5)
+accuracy(mean_model)
+```
+
+##2H
+```{r}
+residuals = resid(mean_model)
+hist(residuals)
+qqnorm(residuals)
+qqline((residuals))
+```
+
+I believe that this model is a good fit, but it can be improved.
+
+##2I
+```{r}
+naive_model = naive(groceries_toothpaste, h=5)
+accuracy(naive_model)
+```
+
+##2J
+```{r}
+residuals = resid(naive_model)
+hist(residuals)
+qqnorm(residuals)
+qqline((residuals))
+```
+
+I believe this model is a good fit.
+
+##2K
+The naive methods perform just slightly better than mean model since it has a lower RSME and MAE.
