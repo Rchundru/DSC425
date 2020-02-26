@@ -1,0 +1,159 @@
+---
+title: "HW3"
+author: "Rohit Chundru 1888308"
+date: "2/20/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Problem 1
+
+### 1A
+mean = .10/(1-0-0.4)
+mean = 0.1667
+
+### 1B
+The AR(2) model is stationary because -1<.04<1, 0+.04<1, and .04-0<1.
+
+### 1C
+r(101) = 0.10 + 0.4(0.02) + 0
+r(101) = 0.108
+
+r(102) = 0.10 + 0.4(-0.01) + 0
+r(102) = 0.096
+
+# Problem 2
+
+### 2A
+```{r}
+library(zoo)
+library(forecast)
+library(fpp2)
+library(fBasics)
+library(lmtest)
+setwd("C:/Users/rohit/Desktop/")
+napm = read.csv(file="NAPM.csv")
+head(napm)
+napm$date = as.Date(as.character(napm$date), format='%m/%d/%Y')
+str(napm)
+napm = napm[order(napm$date),]
+napm<- ts(napm[, "index"], frequency = 12)
+```
+
+There are 432 observations.
+
+### 2B
+```{r}
+plot(napm)
+```
+
+There appears to be no trend or seasonality.
+
+### 2C
+```{r}
+ggAcf(napm, lag.max=100)
+Box.test(napm, lag=10, type = "Ljung")
+```
+
+Given the p-value and the acf plot, we can see that the data is not white noise, thus correlated.
+
+### 2D
+```{r}
+ggPacf(napm, lag.max = 10)
+```
+
+Since there three significant spikes at beginning, this data is AR(3).
+
+### 2E
+```{r}
+m =Arima(napm, order = c(3,0,0), include.constant = F)
+coeftest(m)
+```
+It looks like ar(2) is not significant.
+
+```{r}
+ggAcf(m$residuals, lag.max = 5)
+ggAcf(m$residuals, lag.max = 10)
+ggAcf(m$residuals, lag.max = 15)
+qqnorm(m$residuals)
+qqline(m$residuals)
+```
+
+### 2F
+The coefficients test shows that ar(2) is not sigificant, and the qq plot shows that the residuals are not normal. Therefore this model is not that good.
+
+### 2G
+```{r}
+autoplot(m)
+```
+
+Since all 3 dots are within the unit circle this model can be considered stationary.
+
+### 2H
+```{r}
+step1 = -0.13*(50.1) + 0.02*(48.6) + 1.11*(48.2)
+step1
+
+step2 = -0.13*(48.6) + 0.02*(48.2) + 1.11*(47.961)
+step2
+
+step3 = -0.13*(48.2) + 0.02*(47.961) + 1.11*(47.88)
+step3
+
+step4 = -0.13*(47.961) + 0.02*(47.88) + 1.11*(47.84)
+step4
+
+step5 = -0.13*(47.88) + 0.02*(47.84) + 1.11*(47.83)
+step5
+```
+
+### 2I
+```{r}
+model = hw(napm, h=10);
+autoplot(model)
+```
+
+The trend is consistent with the observed dynamic behaviour.
+
+# Problem 3
+
+### 3A
+```{r}
+groceries = read.csv('C:/Users/rohit/Desktop/groceries.csv')
+head(groceries)
+groceries$Date = as.Date(as.character(groceries$Date), format='%d-%b-%y')
+str(groceries)
+groceries = groceries[order(groceries$Date),]
+toothpaste<- ts(groceries[, "ToothPaste"], frequency = 7)
+ggAcf(toothpaste)
+ggPacf(toothpaste)
+```
+
+The ACF and PACF plots suggest the model is both AR1 and MA1.
+
+### 3B
+```{r}
+m =Arima(toothpaste, order = c(1,0,1), include.constant = F)
+coeftest(m)
+ggAcf(m$residuals)
+hist(m$residuals)
+qqnorm(m$residuals)
+qqline(m$residuals)
+```
+
+The residuals do exhibit white noise behaviour and can be considered normal.
+
+### 3C
+xt =0.99(xt-1) this does represent stationary behaviour because -1<0.99<1
+
+### 3D
+x(54) = 0.99(223) = 22.77
+x(55) = 0.99(220.77) = 218.56
+x(56) = 0.99(218.56) = 216.37
+x(57) = 0.99(216.37) = 214.21
+x(58) = 0.99(214.27) = 212.07
