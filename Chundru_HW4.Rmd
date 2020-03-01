@@ -1,0 +1,155 @@
+---
+title: "HW4"
+author: "Rohit Chundru 1888308"
+date: "2/27/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Problem 1
+
+#### 1A
+What is the mean of the time series rt?
+
+The mean of the model is 5.
+
+#### 1B
+Discuss if the MA (3) model is stationary. Explain.
+
+MA(3) is stationary because an MA model is always stationary.
+
+#### 1C
+Assume that a100= - 0.01 and a99 = 0.02 and a98=-0.04. Compute the 1-step and 2-step
+ahead forecasts of the MA(3) series at the forecast origin t=100.
+
+x(101) = 5 + -0.5(-0.01) + 0.25(0.02) + -0.1(-0.04)
+5.014
+
+x(102) = 5 + -0.5(0) + 0.25(-0.01) + -0.1(0.02)
+4.9955
+
+#### 1D
+Identify the number of autocorrelation functions for the MA(3) model that are not zero.
+
+Since this is an MA(3) model, it has 3 autocorrelation functions that are not equal to zero.
+
+## Problem 2
+
+#### 2A
+Explain why the MA(q) models are regarded as finite memory models.
+
+MA models are regarded as finite memory models because observations spaced more than q units apart are uncorrelated.
+
+#### 2B
+Discuss the ACF behavior of an ARMA(p, q) process.
+
+The ACF of an ARMA(P,Q) model decays to zero.
+
+## Problem 3
+
+#### 3A
+Import the data either in R. In R you need to create a time object for index using the ts()
+function where the starting date is the first month of 1998, and frequency is set equal to 12.
+
+```{r}
+library(zoo)
+library(forecast)
+library(fpp2)
+library(fBasics)
+df = read.csv(file="INDPRO.csv")
+head(df)
+str(df)
+df$date = as.Date(as.character(df$date), format='%m/%d/%Y')
+str(df)
+df <- ts(df[, "rate"], frequency = 12)
+```
+
+#### 3B
+Create the time plot of the index growth rate Xt and analyze trends displayed by the plot?
+
+```{r}
+plot(df)
+```
+
+
+No clear trend or seasonality.
+
+#### 3C
+Analyze the distribution of Xt. Can you assume that Xt is normally distributed?
+
+```{r}
+gghistogram(df, add.normal = T)
+```
+
+The histogram plot is skewed to the right, so it is not normally distributed.
+
+#### 3D
+Analyze the ACF and the PACF functions and discuss the following questions (a yes or no
+answer is not sufficient)
+• Does the TS exhibits a stationary behavior?
+• Does the process show more of an AR behavior or MA behavior?
+
+```{r}
+ggAcf(df)
+ggPacf(df)
+```
+
+
+Since there is no trend or pattern in the TS plot and the lags go to zero in the ACF plot, this TS model can be considered stationary.
+
+Since the PACF plot decays to zero faster, this suggests that this is a AR model.
+
+#### 3E
+Apply the BIC criteria using the auto.arima(xvar, ic=c(“bic)) function, and fit the model
+suggested by the BIC criterion. (M1)
+• Examine the significance of the model coefficients and analyze the residuals to
+check adequacy of the model.
+• Write down the model expression and discuss if this is a good model for the data.
+
+```{r}
+library(astsa)
+aa = auto.arima(df,ic=c("bic"))
+aa
+plot(aa$residuals)
+M1 = arima(df, order= c(1,0,3), seasonal = c(1,0,0))
+```
+
+The variables ar1, ma1, ma2, and ma3 are considered significant and the residualas appear to be white noise.
+
+M1 = 0.8219(AR1) - 0.8168(MA1) + 0.1382(MA2) +0.1839(MA3)
+
+I believe that this is a good fit for our model.
+
+#### 3F
+Find an alternative model (M2) for the index growth rate time series, using either an MA(q) or an AR(p) model depending on your analysis in d). Make sure the model coefficients are significant and the residuals are white noise. Write down the model expression.
+
+```{r}
+library(lmtest)
+M2 = arima(df, order=c(4,0,0))
+plot(M2$residuals)
+coeftest(M2)
+AIC(M2)
+BIC(M2)
+```
+
+M2 = 0.0009 + 0.1537(AR2) + 0.2386(AR3) + 0.2010(AR4)
+
+#### 3G
+Plot the forecasts for the models M1 and M2 and compare their behavior. Are the forecasts similar in trends? Do you notice any major difference?
+
+```{r}
+forecast(M1) %>% autoplot()
+forecast(M2) %>% autoplot()
+```
+
+The forecasts are similar but the forecast for out M1 function is a little more detailed.
+
+#### 3H
+At the end of this analysis, which model would you recommend for this analysis? Discuss the trend captured by it.
+
+I would use our M2 model becuase the AIC and BIC values are slightly lower compared to M1
