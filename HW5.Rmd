@@ -1,0 +1,293 @@
+---
+title: "Untitled"
+author: "Rohit Chundru 1888308"
+date: "3/9/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Problem 1
+Define when a time series process is weakly stationary and explain what the stationarity assumption implies in terms of modeling and forecasting.
+
+Weak stationary occurs when the first 2 moments are finite and time invariant and auto-correlations do not depend on time T. The conditions to meet weak stationary include: No systematic change in mean, no trend. No systenatic change in variation, and no periodic flucuations. In weak stationary data, we can use the past data to forecast furute predictions.
+
+## Problem2
+
+##### 1
+1.	Write the general formula of the model. 
+Y = level + trend + seasonality + noise
+
+##### 2
+2.	Write the detailed expression of the model with the proper values.
+electrcity = 187.96 + trend(-0.04) + season2(2.79) + season3(0.48) + season4(14.02) + season5(6.92) + season6(-0.83) + season7(3.42)
+            + temperature(0.33) + workday(43.86)
+            
+##### 3
+3.	What is the prediction for demand on January 10, 2019?
+electrcity = 187.96 + 10(-0.04) + 0(2.79) + 0(0.48) + 1(14.02) + 0(6.92) + 0(-0.83) + 0(3.42)
+            + 20.46(0.33) + 1(43.86)
+
+
+252.1918
+
+##### 4
+4.	What is the prediction for demand on February 10, 2019?
+electrcity = 187.96 + 41(-0.04) + 0(2.79) + 0(0.48) + 0(14.02) + 0(6.92) + 0(-0.83) + 1(3.42)
+            + 26.6(0.33) + 0(43.86)
+      
+198.518
+
+##### 5
+5.	What is the prediction for demand on May 20, 2019?
+electrcity = 187.96 + 140(-0.04) + 0(2.79) + 0(0.48) + 0(14.02) + 0(6.92) + 0(-0.83) + 0(3.42)
+            + 51.3(0.33) + 1(43.86)
+243.149
+
+## Problem 3
+
+##### 3.1
+
+1.	Import the data and make the necessary conversion to make it time series.
+
+```{r}
+x = read.csv('australia_visitors.csv')
+x = ts(x, start=c(1990,1), frequency=12)
+```
+
+##### 3.2
+
+2.	Plot the data. What do you see? Any trend, seasonality? 
+
+```{r}
+plot(x)
+```
+
+There is seasonality and an upward (positive) trend.
+
+##### 3.3
+
+3.	Based on the plot is this data stationary? What differences are needed to reach stationarity?
+
+Since there is both seasonality and a trend, this data is not stationary.
+
+##### 3.4
+
+4.	Fit a time series linear model using only trend. Plot the original data and the fitted values on the same plot. Does it look like a good fit?
+
+```{r}
+library(fpp2)
+lm_trend = tslm(x ~ trend)
+autoplot(x)+autolayer(lm_trend$fitted.values)
+```
+
+This is not a a good fit.
+
+##### 3.5
+
+5.	Fit a time series linear model using trend and seasonality. Plot the original data and the fitted values on the same plot. Does it look like a good fit? 
+
+```{r}
+lm_trendSeason = tslm(x ~ trend + season)
+autoplot(x)+autolayer(lm_trendSeason$fitted.values)
+```
+
+This looks like a good fit.
+
+##### 3.6
+
+6.	Fit a new linear regression model including trend and seasonality using the data from 1990 up until 2000, including 2000. The following questions will be based on this model. Make use of the window() function.
+
+```{r}
+library(astsa)
+library(lmtest)
+y = read.csv('australia_visitors.csv')
+y = ts(x, start=c(1990,1), end=c(2001,1), frequency=12)
+lm_trendSeasonWindow = tslm(y ~ trend + season)
+coeftest(lm_trendSeasonWindow)
+```
+
+a.	Write the mathematical expression for the linear regression model.
+
+A.  xt = 162.87+1.90(trend)+35.55(season2)+23.92(season3)-5.48(season5)-34.81(season6)+20.34(season7)-19.67(season9)+31.09(season11)
+        +97.14(season12)
+        
+b.	Which coefficients are significant? 
+
+B. trend, season1, season2, season3, seaon5, season6, season7, season9, season11, season12
+
+c.	Assuming the smaller the p-value the more significant that variable is, which 2 variables are the most significant?
+
+C. season2 and season12
+
+d.	Now examine the residuals of the model. Is the model a good fit to the data? Based both on residual analysis and the time series plot you have drawn before, what could you say?
+
+D.
+```{r}
+plot(lm_trendSeasonWindow$residuals)
+```
+
+The residual plot does appear to show some trend, so I would say this is not the best model.
+
+e.	Forecast for the next 5 years until 2005 April. 2005 April is the end of the time series. Plot original data and the forecasts. How do the forecasts look like? Visually can you tell if the model is performing well?
+
+E.
+```{r}
+lm_trend_fcast = forecast(lm_trendSeasonWindow, h=52)
+autoplot(lm_trend_fcast)+autolayer(x)
+```
+
+The model performs well at the start but as the date moves on the forecast is not as accurate.
+
+##### 3.7
+
+7.	Apply necessary differencing until the data is stationarized. How many differences did you need to do? Does the data need any seasonal differencing? Plot the differenced series and comment on it.
+
+```{r}
+stationary_x = x %>% diff(12)%>% diff()
+autoplot(stationary_x)
+```
+
+The data had to be differenced 13 times with a seasonal differencing of 12.
+
+##### 3.8
+
+8.	Now check the ACF and PACF plots of the differenced time series. What do you observe? What models are appropriate here? Which model is the most appropriate based on the time plot of the data and the ACF and PACF plots? Write the order of the model. 
+
+```{r}
+Acf(stationary_x)
+Pacf(stationary_x)
+```
+
+It appears to have MA value of 1 for the non seasonal part and an MA of 2 for the seasonal part and an AR of 1 for the seasonal part.
+
+(0,1,1)(1,12,0)
+
+##### 3.9
+
+9.	Fit the (SARIMA) model. Perform the residual analysis of the model. Is the model a good fit to the data?
+
+```{r}
+m1 = sarima(y, 1,1,1,0,1,0, S=12)
+#plot(m1$residuals)
+```
+
+It does appear to be a good fit.
+
+##### 3.10
+
+10.	Forecast for the next 5 years until 2005 April (2005 April is the end of the time series) using the SARIMA model. Plot original data and the forecasts. How do the forecasts look like? Visually can you tell if the model is performing well? 
+
+```{r}
+#fcast = forecast(m1,h=52)
+```
+
+## Problem 4
+
+1.	Import the data and make the necessary conversion to make it time series. Pay attention that this is annual data meaning the frequency is 1.
+
+##### 4.1
+```{r}
+x = read.csv('women_murders.csv')
+x = ts(x, start=c(1960,1), frequency=1)
+```
+
+##### 4.2
+2.	Plot the data. What do you see? Any trend, seasonality? 
+
+```{r}
+plot(x)
+```
+
+There is no seasonality but there does appear to be an upward trend followed by a downward trend.
+
+##### 4.3
+
+3.	Based on the plot is this data stationary? What differences are needed to reach stationarity?
+
+This plot is not stationary because there appears to be a trend.
+
+##### 4.4
+
+4.	Apply necessary differencing until the data is stationarized. How many differences did you need to do? Plot the differenced series and comment on it.
+```{r}
+stationary_x = x %>% diff()%>%diff()
+autoplot(stationary_x)
+```
+
+had to difference the data 2 times to get stationary data.
+
+##### 4.5
+
+5.	Now check the ACF and PACF plots of the differenced time series. What do you observe? What models are appropriate here? Just based on the ACF and PACF plots which order AR, MA, and ARMA models would you try at first?
+
+```{r}
+ggAcf(stationary_x)
+ggPacf(stationary_x)
+```
+I would try an MA(2), AR(1) mode.
+
+##### 4.6
+
+6.	Fit these 3 models to the data. Do not include any constants. Write down the expressions for each model (mathematical equation). Are the coefficients significant in each model? What are the AIC and BIC values? Which model would you choose?
+
+```{r}
+ma2 = arima(stationary_x, order=c(0,0,2))
+coeftest(ma2)
+AIC(ma2)
+BIC(ma2)
+ar1 = arima(stationary_x, order=c(1,0,0))
+coeftest(ar1)
+AIC(ar1)
+BIC(ar1)
+arma = arima(stationary_x, order=c(1,0,2))
+coeftest(arma)
+AIC(arma)
+BIC(arma)
+```
+ma2 = -0.007 - 1.177(ma1)
+ar1 = -0.003 - 0.663(ar1)
+arma = -0.007 - -0.735(ar1)
+
+In the first model only ma1 is significant. In the second model, ar1, which is the only coefficient, is significant. In the third
+model only ar1 is siginificant. I woulc choose the first model because it had the lowest AIC and BIC values.
+
+##### 4.7
+
+7.	Now examine the residuals of each model. Are the models a good fit to the data? Based both on residual analysis and the AIC metric, which model would you prefer?
+
+```{r}
+plot(ma2$residuals)
+plot(ar1$residuals)
+plot(arma$residuals)
+```
+
+The residuals for all models appear to be white noise, I would still go with the ma2 model.
+
+##### 4.8
+
+8.	By using the best model obtained from part 7, create forecasts for the next 6 periods and plot it. What do you observe?
+
+```{r}
+fcast = forecast(ma2, h=6)
+plot(fcast)
+```
+
+This is not a good forecast.
+
+##### 4.9
+
+9.	Does auto.arima() give the same model you have chosen? If not, which model do you think is better?
+
+```{r}
+autoarima = auto.arima(stationary_x)
+autoarima
+coeftest(autoarima)
+AIC(autoarima)
+BIC(autoarima)
+plot(autoarima$residuals)
+```
+
+It does not use the same model. auto.arima uses a ma1 model. my model has a lower AIC but higher BIC compared to auto.arima.residuals appear to look the same. I think auto.arima is better since it has no insignificant coefficients. 
